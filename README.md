@@ -10,6 +10,13 @@ Main features of this implementation:
 - fp16 inference support
 - Improved compatibility with modern dependencies
 
+## Recent Updates
+
+This version has been updated for better compatibility and dependency management:
+- Removed automatic model downloading - users now specify model paths explicitly
+- Replaced skimage with PIL for lighter dependencies
+- Improved error handling and validation
+
 ## Installation
 
 Recommended:
@@ -58,22 +65,3 @@ You can find more usage examples in [example.ipynb](example.ipynb)
 Detected polygons:
 
 ![](images/result.jpg)
-
-## Recent Changes
-
-This version includes several important updates for better compatibility and dependency management:
-
-### Dependency Updates
-- **Replaced deprecated `cached_download`**: Updated from the deprecated `cached_download` function to the modern `hf_hub_download` function for better compatibility with newer versions of `huggingface_hub`
-- **Replaced skimage with PIL**: Removed the `skimage` dependency and replaced it with `PIL` (Pillow) for image loading, which is more commonly available and lighter weight
-
-### API Changes
-- **Manual model path specification**: Removed automatic model downloading. Users now need to explicitly provide paths to downloaded model weights
-- **Updated constructor**: The `CRAFTModel` constructor now requires `craft_model_path` and optionally `refiner_model_path` instead of a cache directory
-- **Better error handling**: Added validation to ensure model files exist before attempting to load them
-
-### Benefits
-- **Improved compatibility**: Works with newer versions of huggingface_hub
-- **Reduced dependencies**: Lighter dependency footprint by removing skimage
-- **Better control**: Users have explicit control over model locations
-- **Enhanced reliability**: Clear error messages when model files are missing
