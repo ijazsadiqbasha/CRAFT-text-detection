@@ -6,24 +6,10 @@ from torch.autograd import Variable
 from PIL import Image
 import numpy as np
 import cv2
-from huggingface_hub import hf_hub_url, cached_download
-
 from CRAFT.craft import CRAFT, init_CRAFT_model
 from CRAFT.refinenet import RefineNet, init_refiner_model
 from CRAFT.craft_utils import adjustResultCoordinates, getDetBoxes
 from CRAFT.imgproc import resize_aspect_ratio, normalizeMeanVariance
-
-
-HF_MODELS = {
-    'craft': dict(
-        repo_id='boomb0om/CRAFT-text-detector',
-        filename='craft_mlt_25k.pth',
-    ),
-    'refiner': dict(
-        repo_id='boomb0om/CRAFT-text-detector',
-        filename='craft_refiner_CTW1500.pth',
-    )
-}
 
     
 def preprocess_image(image: np.ndarray, canvas_size: int, mag_ratio: bool):
@@ -43,10 +29,10 @@ def preprocess_image(image: np.ndarray, canvas_size: int, mag_ratio: bool):
 class CRAFTModel:
     
     def __init__(
-        self, 
-        cache_dir: str,
+        self,
+        craft_model_path: str,
         device: torch.device,
-        local_files_only: bool = False,
+        refiner_model_path: Optional[str] = None,
         use_refiner: bool = True,
         fp16: bool = True,
         canvas_size: int = 1280,
@@ -55,29 +41,32 @@ class CRAFTModel:
         link_threshold: float = 0.4,
         low_text: float = 0.4
     ):
-        self.cache_dir = cache_dir
+        self.craft_model_path = craft_model_path
+        self.refiner_model_path = refiner_model_path
         self.use_refiner = use_refiner
         self.device = device
         self.fp16 = fp16
-        
+
         self.canvas_size = canvas_size
         self.mag_ratio = mag_ratio
         self.text_threshold = text_threshold
         self.link_threshold = link_threshold
         self.low_text = low_text
-        
-        # loading models
-        paths = {}
-        for model_name in ['craft', 'refiner']:
-            config = HF_MODELS[model_name]
-            paths[model_name] = os.path.join(cache_dir, config['filename'])
-            if not local_files_only:
-                config_file_url = hf_hub_url(repo_id=config['repo_id'], filename=config['filename'])
-                cached_download(config_file_url, cache_dir=cache_dir, force_filename=config['filename'])
-            
-        self.net = init_CRAFT_model(paths['craft'], device, fp16=fp16)
+
+        # Validate model paths
+        if not os.path.exists(craft_model_path):
+            raise FileNotFoundError(f"CRAFT model not found at: {craft_model_path}")
+
+        if use_refiner:
+            if refiner_model_path is None:
+                raise ValueError("refiner_model_path must be provided when use_refiner=True")
+            if not os.path.exists(refiner_model_path):
+                raise FileNotFoundError(f"Refiner model not found at: {refiner_model_path}")
+
+        # Loading models
+        self.net = init_CRAFT_model(craft_model_path, device, fp16=fp16)
         if self.use_refiner:
-            self.refiner = init_refiner_model(paths['refiner'], device)
+            self.refiner = init_refiner_model(refiner_model_path, device)
         else:
             self.refiner = None
         
